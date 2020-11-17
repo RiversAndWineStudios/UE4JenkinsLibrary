@@ -1,5 +1,5 @@
 #!/usr/bin/groovy
-package unreal_1;
+package unreal;
 
 enum BuildConfiguration
 {
