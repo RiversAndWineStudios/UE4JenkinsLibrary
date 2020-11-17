@@ -31,30 +31,6 @@ def GetPollingTriggers() {
 	return ''
 }
 
-def getBranchType( String branch_name ) {
-    if ( branch_name =~ '.*Develop' ) {
-        return 'development'
-    } else if ( branch_name =~ '.*Release/.*' ) {
-        return 'release'
-    } else if ( branch_name =~ '.*Main' ) {
-        return 'master'
-    }
-
-    return 'test'
-}
-
-def getBranchDeploymentEnvironment( String branch_type ) {
-    if ( branch_type == 'Development' ) {
-        return 'Development'
-    } else if ( branch_type == 'Release' ) {
-        return 'Release'
-    } else if ( branch_type == 'Master' ) {
-        return 'Shipping'
-    }
-
-    return 'Testing'
-}
-
 def getClientConfig( String environment_deployment ) {
     if ( environment_deployment == 'Shipping' ) {
         return 'Shipping'
