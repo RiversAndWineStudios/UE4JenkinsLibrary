@@ -115,7 +115,6 @@ def ArtifactLogs() {
 
 def Cleanup() {
 	if(CleanWorkspace) {
-        bat '''"%JENKINS_HOME%/scripts/RemovePerforceClients.py"''' + " -f  *${P4STREAMNAME}*jenkins"
 		cleanup true
 		cleanWs()
 	}
