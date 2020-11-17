@@ -1,180 +1,286 @@
-#!/usr/bin/groovy
 package unreal;
 
-enum BuildConfiguration
-{
-	Development,
-	Test,
-	Shipping,
-	DebugGame
-}
+// ------------------------------------//
+// All the helper functions used above //
+// ------------------------------------//
 
-def GetBuildConfigurationChoices()
-{
-	return Arrays.toString(BuildConfiguration.values()).replaceAll('^.|.$', "").split(", ").join("\n")
-}
-
-/* Project Specific Directories */
-def EngineDir	= ''
-def ProjectName = ''
-def ProjectDir	= ''
-def ProjectFile	= ''
-
-/* Return BatchFiles Dir */
-def BatchDir = ''
-def ScriptInvocationType = ''
-
-/* Return UBT */
-def UBT	= ''
-
-/* Return UAT */
-def UAT = ''
-
-/* Return the editor CMD */
-def UE4_CMD = ''
-
-/* Arguments to pass to all commands. e.g -BuildMachine */
-def DefaultArguments = ''
-
-def RunCommand(def Command)
-{
-	if(isUnix())
-	{
-		sh(script: Command, returnStdout: true)
+def GetJobType() {
+	try {
+		if(RecurringJob) {
+			return 'Recurring'
+		}
 	}
-	else
-	{
-		bat(script: Command, returnStdout: true)
+	catch ( groovy.lang.MissingPropertyException e ) {
+		println("RecurringJob not defined. Will check if it has a build causer")
+	}
+	def isStartedByUser = currentBuild.getBuildCauses('hudson.model.Cause$UserIdCause') != null
+	return isStartedByUser ? 'Manual' : 'Recurring'
+}
+
+def GetBuildPath() {
+    if("${DriveToBuildOn}" == 'SSD') {
+        return "C:\\JenkinsWS"
+    }
+    return "D:\\JenkinsWS"
+}
+
+def GetPollingTriggers() {
+	if(GetJobType() == 'Recurring') {
+		return 'H H/2 * * *'
+	}
+	return ''
+}
+
+def getBranchType( String branch_name ) {
+    if ( branch_name =~ '.*Develop' ) {
+        return 'development'
+    } else if ( branch_name =~ '.*Release/.*' ) {
+        return 'release'
+    } else if ( branch_name =~ '.*Main' ) {
+        return 'master'
+    }
+
+    return 'test'
+}
+
+def getBranchDeploymentEnvironment( String branch_type ) {
+    if ( branch_type == 'Development' ) {
+        return 'Development'
+    } else if ( branch_type == 'Release' ) {
+        return 'Release'
+    } else if ( branch_type == 'Master' ) {
+        return 'Shipping'
+    }
+
+    return 'Testing'
+}
+
+def getClientConfig( String environment_deployment ) {
+    if ( environment_deployment == 'Shipping' ) {
+        return 'Shipping'
+    }
+
+    // release and development return Development
+    return 'Development'
+}
+// Manually build the editor of the game using UnrealBuiltTool
+
+def RemoveOldBuilds() {
+    catchError(buildResult: 'SUCCESS', stageResult: 'FAILURE') {
+        bat "rd /S /Q " + getWorkSpace() + "\\Temp"
+    }
+}
+
+def GenerateProjectfiles() {
+    bat getEngineFolder() + '/Binaries/DotNET/UnrealBuildTool.exe -projectfiles -project=' + getUDFolder() + '/UpsideDrown.uproject -game -progress'
+}
+
+def buildEditor( String platform ) {
+    stage ( 'Build Editor Win64 for ' + platform ) {
+        bat getEngineFolder() + "/Binaries/DotNET/UnrealBuildTool.exe ${env.PROJECT_NAME}Editor Win64 Development " + getUDFolder() + "/${env.PROJECT_NAME}.uproject"
+    }
+}
+
+def ApplyVersion() {
+	env.VERSION_STRING = bat(returnStdout: true, script: '''@"%JENKINS_HOME%/scripts/apply-version.py"''' + " --update --p4 --changelist=${P4_CHANGELIST} --stream=${P4STREAMNAME} -d "+getWorkSpace()).trim()
+    currentBuild.displayName = "#${BUILD_NUMBER}: v${env.VERSION_STRING}"
+}
+
+def SubmitUDBinaries() {
+	println "Im a lib function"
+}
+
+def resetVersion() {
+	bat '''"%JENKINS_HOME%/scripts/apply-version.py"''' + " --reset -d "+getWorkSpace()
+}
+
+def buildCookRun( String platform, String buildConfig ) {
+    // Dont archive for bugfix / hotfix / etc...
+    Boolean can_archive_project = ( buildConfig == 'Development'
+        || buildConfig == 'Shipping' )
+
+    Boolean Storeflag = "${StoreBuild}" == "true" ? true : false;
+    // Cook if we want to archive (obviously) and always cook on Win64 to check PRs won't break
+    Boolean can_cook_project = can_archive_project || ( platform == 'Win64' )
+    can_archive_project = can_archive_project && Storeflag
+
+    stage ( 'Build ' + platform ) {
+        bat getUATCommonArguments( platform, buildConfig ) + getUATBuildArguments()
+    }
+
+    if ( can_cook_project ) {
+        stage ( 'Cook ' + platform ) {
+            // Some platforms may need specific commands to be executed before the cooker starts
+            executePlatformPreCookCommands( platform )
+            bat getUATCommonArguments( platform, buildConfig ) + getUATCookArguments( platform, buildConfig, can_archive_project )
+            executePlatformPostCookCommands( platform )
+        }
+    }
+}
+
+def archiveBuild(String platform, String buildConfig) {
+	echo "BuildConfig: ${buildConfig}    Platform: ${platform}"
+	Boolean ShouldArchiveShipping = (buildConfig == 'All' || buildConfig == 'Shipping')
+	echo "ShouldArchiveShipping: ${ShouldArchiveShipping}"
+	if(ShouldArchiveShipping) {
+		bat '''"%SevenZipPath%/7z.exe"'''+" a -t7z "+getOutputDirectory(platform, 'Shipping')+"/"+getArchiveName(platform, 'Shipping')+ " " +getOutputDirectory(platform, 'Shipping')+"/."
+	}
+	Boolean ShouldArchiveDevelopment = buildConfig == 'All' || buildConfig == 'Development'
+	echo "ShouldArchiveDevelopment: ${ShouldArchiveDevelopment}"
+	if(ShouldArchiveDevelopment) {
+		bat '''"%SevenZipPath%/7z.exe"'''+" a -t7z "+getOutputDirectory(platform, 'Development')+"/"+getArchiveName(platform, 'Development')+ " " +getOutputDirectory(platform, 'Development')+"/."
 	}
 }
 
-/* Initialise the Object with a project name, engine directory, optional project directory and optional default arguments to pass to all commands 
- * if projectDir is not passed it is assumed the engine dir is where the project can be found
- */
-def Initialise(String projectName, String engineDir, String projectDir = "", String defaultArguments = "")
-{
-	ProjectName		= projectName
-	EngineDir		= engineDir
+def ArtifactLogs() {
+    bat '''"%SevenZipPath%/7z.exe"'''+" a -t7z "+getWorkSpace()+"/Temp/Logs.7z"+" " + getEngineFolder()+"/Programs/AutomationTool/Saved/."
+    archiveArtifacts allowEmptyArchive: true, artifacts: 'Temp/**/*.7z', caseSensitive: false, fingerprint: true
+}
 
-	if(projectDir == "")
-	{
-		projectDir	= "${EngineDir}/${ProjectName}"
+def Cleanup() {
+	if(CleanWorkspace) {
+        bat '''"%JENKINS_HOME%/scripts/RemovePerforceClients.py"''' + " -f  *${P4STREAMNAME}*jenkins"
+		cleanup true
+		cleanWs()
 	}
-
-	ProjectDir      = projectDir
-	ProjectFile     = "\"${ProjectDir}/${ProjectName}.uproject\""
-
-	DefaultArguments = defaultArguments
-	
-	BatchDir = isUnix() ? "${EngineDir}/Engine/Build/BatchFiles/Linux" : "${EngineDir}/Engine/Build/BatchFiles"
-	ScriptInvocationType = isUnix() ?  "sh" : "bat"
-	
-	UBT	= "\"${BatchDir}/Build.${ScriptInvocationType}\""
-
-	UAT = "\"${EngineDir}/Engine/Build/BatchFiles/RunUAT.${ScriptInvocationType}\""
-
-	UE4_CMD = "\"${EngineDir}/Engine/Binaries/Win64/UE4Editor-Cmd.exe\""
 }
 
-/* Runs Setup.bat */
-def Setup()
-{
-	RunCommand("\"${EngineDir}/Setup.${ScriptInvocationType}\" --force")
-}
-
-/* Generate Project files for the initialised project */
-def GenerateProjectFiles()
-{
-	RunCommand("\"${BatchDir}/GenerateProjectFiles.${ScriptInvocationType}\" -projectfiles -project=${ProjectFile} -game -engine -progress ${DefaultArguments}")
-}
-
-/** 
-  * Compile passed in project for a given BuildConfiguration.
-  *	target - The Compilation target
-  *	buildConfiguration - The compilation configuration type
-  * platform - the target compilation platform
-  * additionalArguments - Additional arguments to pass to the compiler
- */ 
-def Compile(String target, BuildConfiguration buildConfiguration, String platform = "Win64", String additionalArguments = "")
-{
-	RunCommand("${UBT} ${target} ${ProjectFile} ${platform} " +  buildConfiguration.name() + " ${additionalArguments} ${DefaultArguments}")
-}
-
-/** 
-  * Compile passed in project for a given BuildConfiguration. 
-  *	buildConfiguration - The compilation configuration type
-  * editor - Whether or not this target is for editor
-  * platform - the target compilation platform
-  * additionalArguments - Additional arguments to pass to the compiler
- */ 
-def CompileProject(BuildConfiguration buildConfiguration, boolean editor = true, String platform = "Win64", String additionalArguments = "")
-{
-	String projectTarget = "${ProjectName}"
-	if(editor && (buildConfiguration == BuildConfiguration.Development || buildConfiguration == BuildConfiguration.DebugGame))
-	{
-		projectTarget += "Editor"
+def getArchiveDirectory() {
+	def JobType = GetJobType()
+	if(JobType == 'Manual') {
+		return ManualBuildPath
 	}
-	RunCommand("${UBT} ${projectTarget} ${ProjectFile} ${platform} " +  buildConfiguration.name() + " ${additionalArguments} ${DefaultArguments}")
+	return RecurringBuildPath
 }
 
-def RunBuildGraph(String scriptPath, String target, def parameters, String additionalArguments = "")
-{
-	String parsedParams = ""
-	parameters.each
-	{
-		parameter -> parsedParams += "-set:${parameter.key}=\"${parameter.value}\" "
-	}
-
-	RunCommand("${UAT} BuildGraph -Script=\"${scriptPath}\" -target=\"${target}\" -set:ProjectName=${ProjectName} -set:UProject=${ProjectFile} ${parsedParams} ${additionalArguments} ${DefaultArguments}")
+def getArchiveName(String platform, String buildConfig) {
+    return "${P4STREAMNAME}/${env.VERSION_STRING}-${Platform}-${buildConfig}.7z"
 }
 
-/** 
-  * Cook the project for the given platform(s)
-  * iterative - Use iterative cooking
-  * mapsToCook - The maps we want cooked
-  *	platforms - The desired cooking platform. Each platform should be seperated by a +. e.g. WindowsNoEditor+Xbox+Linux
-  * additionalArguments - Optional arguments to pass to the cooker
- */ 
-def CookProject(String platforms = "WindowsNoEditor", String mapsToCook = "", boolean iterative = true, String additionalArguments = "-fileopenlog")
-{
-	 RunCommand("${UE4_CMD} ${ProjectFile} -run=Cook -targetplatform=${platforms} -map=${mapsToCook} ${additionalArguments} ${DefaultArguments}" + (iterative ? " -iterate -iterateshash" : ""))
+def getWorkSpace() {
+    return workspace
 }
 
-/** 
-  * Package the project for a target platform
-  * platform - The platform we want to package to
-  * buildConfiguration - The BuildConfiguration type of this deployment
-  *	stagingDir - The staging directory we want to output this deployment to
-  * usePak - Whether or not to use pak files
-  * iterative - Use iterative deployment
-  * cmdlineArguments - Arguments to pass to the commandline when the package next launches
-  * additionalArguments - Optional arguments to pass to the deployment command
- */ 
-def PackageProject(String platform, BuildConfiguration buildConfiguration, String stagingDir, boolean usePak = true, boolean iterative = true, String cmdlineArguments = "", String additionalArguments = "")
-{
-	RunCommand("${UAT} BuildCookRun -project=${ProjectFile} -platform=${platform} -skipcook -skipbuild -nocompileeditor -NoSubmit -stage -package -clientconfig=" + buildConfiguration.name() + " -StagingDirectory=\"${stagingDir}\"" + (usePak ? " -pak " : " ") + " -cmdline=\"${cmdlineArguments}\" " + "${additionalArguments} ${DefaultArguments}")
+//Full outputh path
+def getOutputDirectory( String platform, String buildConfig ) {
+    return getWorkSpace() +'/'+ getOutputDirFromProjectRoot(platform, buildConfig)
 }
 
-/**
-  * Package and Deploy the project to a platform
-  * platform - The platform we want to package and deploy to
-  * buildConfiguration - The BuildConfiguration type of this deployment
-  *	stagingDir - The staging directory we want to output this deployment to
-  * deviceIP - The IP of the device we want to deploy to
-  * usePak - Whether or not to use pak files
-  * iterative - Use iterative deployment
-  * cmdlineArguments - Arguments to pass to the commandline when the package next launches
-  * additionalArguments - Optional arguments to pass to the deployment command
- */ 
-def PackageAndDeployProject(String platform, BuildConfiguration buildConfiguration, String stagingDir, String deviceIP, boolean usePak = true, boolean iterative = true, String cmdlineArguments = "", String additionalArguments = "")
-{
-	PackageProject(platform, buildConfiguration, stagingDir, usePak, iterative, cmdlineArguments, " -Messaging -deploy -device=${platform}@${deviceIP} " + (iterative ? " -iterativedeploy " : " ") + additionalArguments)
+//relative to Project folder path, so we can use it for artifacts
+def getOutputDirFromProjectRoot( String platform, String buildConfig ) {
+    return 'Temp/' + buildConfig + "/"+platform
 }
 
-/* Build the project's DDC, recommend to use in combation with a shared DDC https://docs.unrealengine.com/en-us/Engine/Basics/DerivedDataCache */
-def BuildDDC()
-{
-	 RunCommand("${UE4_CMD} ${ProjectFile} -run=DerivedDataCache -fill ${DefaultArguments}")
+def getEngineFolder() {
+    if ( env.NODE_NAME == 'master' ) {
+        return getWorkSpace() + '/Engine'
+    }
+    //care!
+    return getWorkSpace() + '/Engine'
+}
+
+def getUDFolder() {
+    return getWorkSpace() + '/UD'
+}
+
+def getUATCommonArguments( String platform, String buildConfig ) {
+    String result = getEngineFolder() + '/Build/BatchFiles/RunUAT.bat BuildCookRun -project=' + getUDFolder() + "/${env.PROJECT_NAME}.uproject -utf8output -noP4 -platform=" + platform + ' -clientconfig=' + buildConfig
+	Boolean CleanFlag = "${CLEANBUILD}" == "true" ? true : false;
+    result += getUATCompileFlags(platform)
+
+    if ( buildConfig == 'Shipping' || CleanFlag) {
+        result += ' -clean'
+    }
+
+    return result
+}
+
+def getUATCompileFlags(String platform) {
+    // -nocompile because we already have the automation tools
+    // -nocompileeditor because we built it before
+    String result = ' -nocompile -nocompileeditor -prereqs -nodebuginfo -ue4exe='
+    result += getEngineFolder()
+    result += "/Binaries/"+platform+"/UE4Editor-Cmd.exe"
+    return result
+}
+
+def getUATBuildArguments() {
+    // build only. dont cook. This is done in a separate stage
+    return ' -build -skipcook'
+}
+
+def getUATCookArguments( String platform, String buildConfig, Boolean archive_project ) {
+    String result = ' -allmaps -cook'
+
+    result += getUATCookArgumentsFromClientConfig( buildConfig)
+    result += getUATCookArgumentsForPlatform( platform )
+
+    if ( archive_project ) {
+        result += ' -pak -package -stage -archive -archivedirectory=' + getOutputDirectory( platform, buildConfig )
+    }
+
+    return result
+}
+
+def getUATCookArgumentsFromClientConfig( String buildConfig ) {
+    // Do not cook what has already been cooked if possible
+    if ( buildConfig == 'Development' ) {
+        return ' -iterativecooking'
+    }
+    // but not in shipping; Do a full cook.
+    else if ( buildConfig == 'Shipping' ) {
+        return ' -distribution'
+    }
+}
+
+def getUATCookArgumentsForPlatform( String platform ) {
+    String result = ''
+
+    // See https://docs.unrealengine.com/latest/INT/Engine/Basics/Projects/Packaging/
+    if ( platform != 'PS4' ) {
+        result += ' -compressed'
+    }
+
+    if ( params.DEPLOY_BUILD ) {
+        if ( platform == 'PS4' ) {
+            result += " -deploy -cmdline=\" -Messaging\" -device=PS4@192.168.XXX.XXX"
+        }
+        else if ( platform == 'XboxOne' ) {
+            result += " -deploy -cmdline=\" -Messaging\" -device=XboxOne@192.168.YYY.YYY"
+        }
+    }
+
+    return result
+}
+
+def executePlatformPreCookCommands( String platform ) {
+    if ( platform == 'PS4' ) {
+    }
+}
+
+def executePlatformPostCookCommands( String platform ) {
+    if ( platform == 'PS4' ) {
+    }
+}
+
+// Note you will have to add some exceptions in the Jenkins security options to allow this function to run
+def abortPreviousRunningBuilds() {
+    def hi = Jenkins.instance
+    def pname = env.JOB_NAME.split('/')[0]
+
+    hi.getItem( pname ).getItem(env.JOB_BASE_NAME).getBuilds().each { build ->
+        def exec = build.getExecutor()
+
+        if ( build.number < currentBuild.number && exec != null ) {
+            exec.interrupt(
+        Result.ABORTED,
+        new CauseOfInterruption.UserInterruption(
+          "Aborted by #${currentBuild.number}"
+        )
+      )
+            println("Aborted previous running build #${build.number}")
+        }
+    }
 }
 
 return this
