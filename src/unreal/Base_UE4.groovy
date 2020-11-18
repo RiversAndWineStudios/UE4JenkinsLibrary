@@ -1,4 +1,5 @@
 #!/usr/bin/groovy
+//mostly unused script but was the base for this.
 package unreal;
 
 enum BuildConfiguration

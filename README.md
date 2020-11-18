@@ -1,5 +1,7 @@
 # UE4 Jenkins Library
-Jenkins Pipeline Library for UE4
+Jenkins Pipeline Library for UE4.
+Modified for Rivers and Wine Studios.
+Includes extra libraries for some base functionality regarding Jenkins, aswell as a library for P4 functions.
 
 ------
 
