@@ -1,5 +1,5 @@
 package unreal;
-
+import JenkinsBase;
 // ------------------------------------//
 // All the helper functions used above //
 // ------------------------------------//
@@ -78,12 +78,7 @@ def ArtifactLogs() {
     archiveArtifacts allowEmptyArchive: true, artifacts: 'Temp/**/*.7z', caseSensitive: false, fingerprint: true
 }
 
-def Cleanup() {
-	if(env.CleanWorkspace) {
-		cleanup true
-		cleanWs()
-	}
-}
+
 
 def getArchiveName(String platform, String buildConfig) {
     return "${P4STREAMNAME}/${env.VERSION_STRING}-${Platform}-${buildConfig}.7z"
@@ -112,6 +107,7 @@ def getEngineFolder() {
 }
 
 def getUDFolder() {
+    println JenkinsBase.GetJobType()
     return getWorkSpace() + '/UD'
 }
 
