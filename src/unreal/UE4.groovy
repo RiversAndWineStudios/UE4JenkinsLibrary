@@ -1,5 +1,5 @@
 package unreal;
-import JenkinsBase;
+import unreal.JenkinsBase;
 // ------------------------------------//
 // All the helper functions used above //
 // ------------------------------------//
