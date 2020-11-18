@@ -19,9 +19,9 @@ def GetJobType() {
 
 def GetBuildPath() {
     if("${DriveToBuildOn}" == 'SSD') {
-        return "C:\\JenkinsWS"
+        return BuildPathHDD
     }
-    return "D:\\JenkinsWS"
+    return BuildPathSSD
 }
 
 def GetPollingTriggers() {
