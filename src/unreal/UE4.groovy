@@ -105,7 +105,7 @@ def getEngineFolder() {
 }
 
 def getUDFolder() {
-    println unreal.JenkinsBase().GetJobType()
+    println new unreal.JenkinsBase().GetJobType()
     return getWorkSpace() + '/UD'
 }
 
