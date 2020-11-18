@@ -6,7 +6,7 @@ import unreal.JenkinsBase;
 
 def RemoveOldBuilds() {
     catchError(buildResult: 'SUCCESS', stageResult: 'FAILURE') {
-        bat "rd /S /Q " + getWorkSpace() + "\\Temp"
+        bat "rd /S /Q " + workspace + "\\Temp"
     }
 }
 
@@ -21,16 +21,12 @@ def buildEditor( String platform ) {
 }
 
 def ApplyVersion() {
-	env.VERSION_STRING = bat(returnStdout: true, script: '''@"%JENKINS_HOME%/scripts/apply-version.py"''' + " --update --p4 --changelist=${P4_CHANGELIST} --stream=${P4STREAMNAME} -d "+getWorkSpace()).trim()
+	env.VERSION_STRING = bat(returnStdout: true, script: '''@"%JENKINS_HOME%/scripts/apply-version.py"''' + " --update --p4 --changelist=${P4_CHANGELIST} --stream=${P4STREAMNAME} -d "+workspace).trim()
     currentBuild.displayName = "#${BUILD_NUMBER}: v${env.VERSION_STRING}"
 }
 
-def SubmitUDBinaries() {
-	println "Im a lib function"
-}
-
 def resetVersion() {
-	bat '''"%JENKINS_HOME%/scripts/apply-version.py"''' + " --reset -d "+getWorkSpace()
+	bat '''"%JENKINS_HOME%/scripts/apply-version.py"''' + " --reset -d "+workspace
 }
 
 def buildCookRun( String platform, String buildConfig ) {
@@ -72,23 +68,17 @@ def archiveBuild(String platform, String buildConfig) {
 }
 
 def ArtifactLogs() {
-    bat '''"%SevenZipPath%/7z.exe"'''+" a -t7z "+getWorkSpace()+"/Temp/Logs.7z"+" " + getEngineFolder()+"/Programs/AutomationTool/Saved/."
+    bat '''"%SevenZipPath%/7z.exe"'''+" a -t7z "+workspace+"/Temp/Logs.7z"+" " + getEngineFolder()+"/Programs/AutomationTool/Saved/."
     archiveArtifacts allowEmptyArchive: true, artifacts: 'Temp/**/*.7z', caseSensitive: false, fingerprint: true
 }
-
-
 
 def getArchiveName(String platform, String buildConfig) {
     return "${P4STREAMNAME}/${env.VERSION_STRING}-${Platform}-${buildConfig}.7z"
 }
 
-def getWorkSpace() {
-    return workspace
-}
-
 //Full outputh path
 def getOutputDirectory( String platform, String buildConfig ) {
-    return getWorkSpace() +'/'+ getOutputDirFromProjectRoot(platform, buildConfig)
+    return workspace +'/'+ getOutputDirFromProjectRoot(platform, buildConfig)
 }
 
 //relative to Project folder path, so we can use it for artifacts
@@ -97,16 +87,11 @@ def getOutputDirFromProjectRoot( String platform, String buildConfig ) {
 }
 
 def getEngineFolder() {
-    if ( env.NODE_NAME == 'master' ) {
-        return getWorkSpace() + '/Engine'
-    }
-    //care!
-    return getWorkSpace() + '/Engine'
+    return workspace + '/Engine'
 }
 
 def getUDFolder() {
-    println new JenkinsBase().GetJobType()
-    return getWorkSpace() + '/UD'
+    return workspace + '/UD'
 }
 
 def getUATCommonArguments( String platform, String buildConfig ) {

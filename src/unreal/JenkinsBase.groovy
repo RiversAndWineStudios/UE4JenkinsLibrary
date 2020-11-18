@@ -32,12 +32,7 @@ def GetJobType() {
 	return isStartedByUser ? 'Manual' : 'Recurring'
 }
 
-def GetBuildPath() {
-    if("${DriveToBuildOn}" == 'SSD') {
-        return "C:\\JenkinsWS"
-    }
-    return "D:\\JenkinsWS"
-}
+
 
 def Cleanup() {
 	if(env.CleanWorkspace) {
@@ -64,6 +59,10 @@ def abortPreviousRunningBuilds() {
             println("Aborted previous running build #${build.number}")
         }
     }
+}
+
+def P4Submit(Paths) {
+	p4.run('info')
 }
 
 return this
