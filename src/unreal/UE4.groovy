@@ -18,10 +18,11 @@ def GetJobType() {
 }
 
 def GetBuildPath() {
+    println "Get BuildPath: ${DriveToBuildOn}"
     if("${DriveToBuildOn}" == 'SSD') {
-        return env.BuildPathHDD
+        return env.BuildPathSDD
     }
-    return env.BuildPathSSD
+    return env.BuildPathHDD
 }
 
 def GetPollingTriggers() {
