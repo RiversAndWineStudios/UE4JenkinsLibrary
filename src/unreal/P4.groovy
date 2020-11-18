@@ -10,7 +10,12 @@ def GetP4WS(Streamdir, Streamname) {
 def P4Submit(creds, ws) {
     def p4 = p4(credential: creds, workspace : ws)
 	def info = p4.run('info')
-    info.each {entry-> println "$entry.key : $entry.value"}
+    for( def item:  info) {
+        for ( String key: item.keySet()) {
+            value = item.get(key)
+            println "Key: " + key + " Value: "+ value
+        }
+    }
 }
 
 
