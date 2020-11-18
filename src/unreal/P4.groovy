@@ -9,7 +9,7 @@ def GetP4WS(Streamdir, Streamname) {
 
 def P4Submit(creds, ws) {
     def p4 = p4(credential: creds, workspace : ws)
-	println p4.getUserName()
+	println p4.run('info')
 }
 
 
