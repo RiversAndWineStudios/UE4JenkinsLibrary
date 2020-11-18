@@ -19,6 +19,8 @@ def GetJobType() {
 
 def GetBuildPath() {
     println "Get BuildPath: ${DriveToBuildOn}"
+    println "Potential SSD: ${env.BuildPathSSD}"
+    println "Potential HDD: ${env.BuildPathHDD}"
     if("${DriveToBuildOn}" == 'SSD') {
         return env.BuildPathSDD
     }
