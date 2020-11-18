@@ -62,7 +62,7 @@ def abortPreviousRunningBuilds() {
 }
 
 def P4Submit(Paths) {
-	println p4.run('info')
+	println p4.getUserName()
 }
 
 return this
