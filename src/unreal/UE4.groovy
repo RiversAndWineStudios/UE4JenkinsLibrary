@@ -4,7 +4,7 @@ import unreal.JenkinsBase;
 // All the helper functions used above //
 // ------------------------------------//
 
-
+def jb = new unreal.JenkinsBase();
 
 def RemoveOldBuilds() {
     catchError(buildResult: 'SUCCESS', stageResult: 'FAILURE') {
@@ -107,8 +107,7 @@ def getEngineFolder() {
 }
 
 def getUDFolder() {
-    def JB = new unreal.JenkinsBase()
-    println JB.GetJobType()
+    println jb.GetJobType()
     return getWorkSpace() + '/UD'
 }
 
