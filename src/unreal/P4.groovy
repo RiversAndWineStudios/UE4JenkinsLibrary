@@ -7,7 +7,7 @@ def GetP4WS(Streamdir, Streamname) {
     return P4WS
 }
 
-def P4Submit(creds, ws) {
+def P4Submit(creds, ws, Paths, Message) {
     def p4 = p4(credential: creds, workspace : ws)
 	def info = p4.run('info')
     for( def item:  info) {
@@ -16,6 +16,22 @@ def P4Submit(creds, ws) {
             println "Key: " + key + " Value: "+ value
         }
     }
+    for(String path : Paths) {
+        info = p4.run('reconcile', '-e', '-a', '-n', path)
+        for( def item:  info) {
+            for ( String key: item.keySet()) {
+                value = item.get(key)
+                println "[" + key + ":"+ value+"]"
+            }
+        }
+    }
+    /*info = p4.run('submit','-d', Message)
+    for( def item:  info) {
+            for ( String key: item.keySet()) {
+                value = item.get(key)
+                println "[" + key + ":"+ value+"]"
+            }
+        }*/
 }
 
 
