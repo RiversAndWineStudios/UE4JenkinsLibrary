@@ -91,6 +91,8 @@ def GetEngineFolder() {
 }
 
 def GetUDFolder() {
+    println 'Trying to print workspace'
+    println workspace
     return workspace + '/UD'
 }
 
