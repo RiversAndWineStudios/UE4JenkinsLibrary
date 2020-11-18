@@ -4,42 +4,7 @@ package unreal;
 // All the helper functions used above //
 // ------------------------------------//
 
-def GetJobType() {
-	try {
-		if(RecurringJob) {
-			return 'Recurring'
-		}
-	}
-	catch ( groovy.lang.MissingPropertyException e ) {
-		println("RecurringJob not defined. Will check if it has a build causer")
-	}
-	def isStartedByUser = currentBuild.getBuildCauses('hudson.model.Cause$UserIdCause') != null
-	return isStartedByUser ? 'Manual' : 'Recurring'
-}
 
-def GetBuildPath() {
-    if("${DriveToBuildOn}" == 'SSD') {
-        return "C:\\JenkinsWS"
-    }
-    return "D:\\JenkinsWS"
-}
-
-def GetPollingTriggers() {
-	if(GetJobType() == 'Recurring') {
-		return 'H H/2 * * *'
-	}
-	return ''
-}
-
-def getClientConfig( String environment_deployment ) {
-    if ( environment_deployment == 'Shipping' ) {
-        return 'Shipping'
-    }
-
-    // release and development return Development
-    return 'Development'
-}
-// Manually build the editor of the game using UnrealBuiltTool
 
 def RemoveOldBuilds() {
     catchError(buildResult: 'SUCCESS', stageResult: 'FAILURE') {
@@ -118,14 +83,6 @@ def Cleanup() {
 		cleanup true
 		cleanWs()
 	}
-}
-
-def getArchiveDirectory() {
-	def JobType = GetJobType()
-	if(JobType == 'Manual') {
-		return env.ManualBuildPath
-	}
-	return env.RecurringBuildPath
 }
 
 def getArchiveName(String platform, String buildConfig) {
@@ -235,26 +192,6 @@ def executePlatformPreCookCommands( String platform ) {
 
 def executePlatformPostCookCommands( String platform ) {
     if ( platform == 'PS4' ) {
-    }
-}
-
-// Note you will have to add some exceptions in the Jenkins security options to allow this function to run
-def abortPreviousRunningBuilds() {
-    def hi = Jenkins.instance
-    def pname = env.JOB_NAME.split('/')[0]
-
-    hi.getItem( pname ).getItem(env.JOB_BASE_NAME).getBuilds().each { build ->
-        def exec = build.getExecutor()
-
-        if ( build.number < currentBuild.number && exec != null ) {
-            exec.interrupt(
-        Result.ABORTED,
-        new CauseOfInterruption.UserInterruption(
-          "Aborted by #${currentBuild.number}"
-        )
-      )
-            println("Aborted previous running build #${build.number}")
-        }
     }
 }
 
