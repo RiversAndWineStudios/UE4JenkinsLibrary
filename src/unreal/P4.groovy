@@ -7,5 +7,9 @@ def GetP4WS(Streamdir, Streamname) {
     return P4WS
 }
 
+def P4Submit(Paths) {
+	println p4.getUserName()
+}
+
 
 return this
