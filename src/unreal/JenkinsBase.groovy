@@ -62,7 +62,7 @@ def abortPreviousRunningBuilds() {
 }
 
 def P4Submit(Paths) {
-	p4.run('info')
+	println p4.run('info')
 }
 
 return this
