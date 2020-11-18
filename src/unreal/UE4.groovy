@@ -19,9 +19,9 @@ def GetJobType() {
 
 def GetBuildPath() {
     if("${DriveToBuildOn}" == 'SSD') {
-        return BuildPathHDD
+        return env.BuildPathHDD
     }
-    return BuildPathSSD
+    return env.BuildPathSSD
 }
 
 def GetPollingTriggers() {
@@ -114,7 +114,7 @@ def ArtifactLogs() {
 }
 
 def Cleanup() {
-	if(CleanWorkspace) {
+	if(env.CleanWorkspace) {
 		cleanup true
 		cleanWs()
 	}
@@ -123,9 +123,9 @@ def Cleanup() {
 def getArchiveDirectory() {
 	def JobType = GetJobType()
 	if(JobType == 'Manual') {
-		return ManualBuildPath
+		return env.ManualBuildPath
 	}
-	return RecurringBuildPath
+	return env.RecurringBuildPath
 }
 
 def getArchiveName(String platform, String buildConfig) {
