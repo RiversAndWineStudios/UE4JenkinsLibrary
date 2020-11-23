@@ -33,9 +33,7 @@ def SetP4Ignore(fileToSet){
         RunCommand("export P4IGNORE")
     }
     else {
-        RunCommand("setlocal
-        setx P4IGNORE ${fileToSet}
-        endlocal")
+        RunCommand("setlocal && setx P4IGNORE ${fileToSet} && endlocal")
     }
 }
 
