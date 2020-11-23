@@ -28,7 +28,7 @@ def P4Submit(creds, ws, Paths, Message) {
 
 def SetP4Ignore(creds, ws, fileToSet){
     def p4 = p4(credential: creds, workspace : ws)
-    p4.run('set', 'P4IGNORE', fileToSet)
+    p4.run('set', "P4IGNORE=", fileToSet)
 }
 
 return this
