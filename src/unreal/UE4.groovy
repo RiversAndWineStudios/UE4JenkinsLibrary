@@ -90,7 +90,7 @@ def CompileProject(String buildConfig, String platform = "Win64", boolean editor
             }
         }
         //Normal build
-        new JenkinsBase().RunCommand("${UBT} ${projectTarget} ${ProjectFile} ${platform} ${buildConfig} ${additionalArguments} ${DefaultArguments} -skipcook")
+        new JenkinsBase().RunCommand("${UBT} ${projectTarget} ${ProjectFile} ${platform} ${buildConfig} ${additionalArguments} ${DefaultArguments} -build -skipcook")
     }
 }
 
@@ -112,7 +112,7 @@ def PackageProject(String platform, String buildConfig, String stagingDir, boole
 }
 
 def GetUATCommonArguments( String platform, String buildConfig) {
-    String result = "${UAT} BuildCookRun -project=${ProjectFile} -platform=${platform} -clientconfig=${clientconfig} -utf8output -noP4"
+    String result = "${UAT} BuildCookRun -project=${ProjectFile} -platform=${platform} -clientconfig=${buildConfig} -utf8output -noP4"
     result += GetUATCompileFlags(platform)
     if ( buildConfig == 'Shipping') {
         result += ' -clean'
