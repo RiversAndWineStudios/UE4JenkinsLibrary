@@ -35,7 +35,7 @@ def Initialise(String projectName, String projectRoot, String engineDir = "", St
 {
 	ProjectName		= projectName
 	ProjectRoot		= projectRoot
-    ProjectDir      = "${ProjectRoot}"/"UD"
+    ProjectDir      = "${ProjectRoot}/UD"
 	ProjectFile     = "\"${ProjectDir}/${ProjectName}.uproject\""
 
     if(engineDir == "")
