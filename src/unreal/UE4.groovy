@@ -1,3 +1,4 @@
+#!/usr/bin/groovy
 package unreal;
 import unreal.JenkinsBase;
 // ------------------------------------//
