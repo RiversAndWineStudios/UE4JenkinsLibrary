@@ -60,7 +60,12 @@ def Initialise(String projectName, String projectRoot, String engineDir = "", St
 
 def RemoveOldBuilds() {
     catchError(buildResult: 'SUCCESS', stageResult: 'FAILURE') {
-        bat "rd /S /Q ${OutputPath}"
+        if(isUnix()) {
+            RunCommand("rm -rf ${OutputhPath}")
+        }
+        else {
+            RunCommand("rd /S /Q ${OutputPath}")
+        }
     }
 }
 
@@ -69,7 +74,7 @@ def GenerateProjectfiles() {
 }
 
 def ApplyVersion() {
-	env.VERSION_STRING = bat(returnStdout: true, script: '''@"%JENKINS_HOME%/scripts/apply-version.py"''' + " --update --p4 --changelist=${P4_CHANGELIST} --stream=${P4STREAMNAME} -d ${ProjectRoot}").trim()
+	env.VERSION_STRING = JB.RunCommand('''@"%JENKINS_HOME%/scripts/apply-version.py"''' + " --update --p4 --changelist=${P4_CHANGELIST} --stream=${P4STREAMNAME} -d ${ProjectRoot}".trim())
     currentBuild.displayName = "#${BUILD_NUMBER}: v${env.VERSION_STRING}"
 }
 
