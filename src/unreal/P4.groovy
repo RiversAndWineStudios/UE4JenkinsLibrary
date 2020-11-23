@@ -29,11 +29,10 @@ def P4Submit(creds, ws, Paths, Message) {
 def SetP4Ignore(fileToSet){
     def JB = new unreal.JenkinsBase()
     if(isUnix()) {
-        JB.RunCommand("P4IGNORE=${fileToSet}")
-        JB.RunCommand("export P4IGNORE")
+        JB.RunCommand("P4IGNORE=${fileToSet} && export P4IGNORE")
     }
     else {
-        JB.RunCommand("setlocal && setx P4IGNORE ${fileToSet} && endlocal")
+        JB.RunCommand("setx P4IGNORE ${fileToSet}")
     }
 }
 
