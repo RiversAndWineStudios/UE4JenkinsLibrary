@@ -34,14 +34,13 @@ def Initialise(String projectName, String projectRoot, String engineDir = "", St
 {
 	ProjectName		= projectName
 	ProjectRoot		= projectRoot
+    ProjectDir      = "${ProjectRoot}"/"UD"
+	ProjectFile     = "\"${ProjectDir}/${ProjectName}.uproject\""
 
-	if(engineDir == "")
+    if(engineDir == "")
 	{
 		EngineDir	= "${ProjectDir}/Engine"
 	}
-
-	ProjectDir      = "${ProjectRoot}"/"UD"
-	ProjectFile     = "\"${ProjectDir}/${ProjectName}.uproject\""
 
 	DefaultArguments = defaultArguments
 	
