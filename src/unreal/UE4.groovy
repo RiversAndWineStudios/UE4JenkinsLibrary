@@ -69,7 +69,7 @@ def RemoveOldBuilds() {
 }
 
 def GenerateProjectfiles() {
-    new JenkinsBase().RunCommand("\"${BatchDir}/GenerateProjectFiles.${ScriptInvocationType}\" -projectfiles -project=${ProjectFile} -game -engine -progress ${DefaultArguments}")
+    new JenkinsBase().RunCommand("\"${BatchDir}/GenerateProjectFiles.${ScriptInvocationType}\" -projectfiles -project=${ProjectFile} -game -engine ${DefaultArguments}")
 }
 
 def ApplyVersion() {
@@ -82,14 +82,15 @@ def CompileProject(String buildConfig, String platform = "Win64", boolean editor
 	String projectTarget = "${ProjectName}"
     stage ("Build - ${buildConfig}-${platform}") {
 
-        new JenkinsBase().RunCommand("${UBT} ${projectTarget} ${ProjectFile} ${platform} ${buildConfig} ${additionalArguments} ${DefaultArguments} -build -skipcook")
         if(editor && (buildConfig == 'Development' || buildConfig == 'DebugGame'))
         {
             stage("Build Editor - ${buildConfig}-${platform}") {
-                projectTarget += "Editor"
-                new JenkinsBase().RunCommand("${UBT} ${projectTarget} ${ProjectFile} ${platform} ${buildConfig} ${additionalArguments} ${DefaultArguments} -build -skipcook")
+                //Editor
+                new JenkinsBase().RunCommand("${UBT} ${projectTarget}Editor ${ProjectFile} ${platform} ${buildConfig} ${additionalArguments} ${DefaultArguments} -build -skipcook")
             }
         }
+        //Normal build
+        new JenkinsBase().RunCommand("${UBT} ${projectTarget} ${ProjectFile} ${platform} ${buildConfig} ${additionalArguments} ${DefaultArguments} -skipcook")
     }
 }
 
@@ -98,7 +99,7 @@ def CookProject( String platform, String buildConfig) {
         // Some platforms may need specific commands to be executed before the cooker starts
         executePlatformPreCookCommands( platform )
         //BuildCookRun baseline + UAT Cook arguments
-        new JenkinsBase().RunCommand(GetUATCommonArguments()+" "+GetUATCookArguments(platform, buildConfig))
+        new JenkinsBase().RunCommand(GetUATCommonArguments(platform, buildConfig)+" "+GetUATCookArguments(platform, buildConfig))
         executePlatformPostCookCommands( platform )
     }
 }
@@ -110,10 +111,10 @@ def PackageProject(String platform, String buildConfig, String stagingDir, boole
     }
 }
 
-def GetUATCommonArguments( String platform, String buildConfig, boolean clean ) {
+def GetUATCommonArguments( String platform, String buildConfig) {
     String result = "${UAT} BuildCookRun -project=${ProjectFile} -platform=${platform} -clientconfig=${clientconfig} -utf8output -noP4"
     result += GetUATCompileFlags(platform)
-    if ( buildConfig == 'Shipping' || clean) {
+    if ( buildConfig == 'Shipping') {
         result += ' -clean'
     }
     return result
