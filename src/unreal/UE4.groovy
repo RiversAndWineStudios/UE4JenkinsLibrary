@@ -73,7 +73,7 @@ def GenerateProjectfiles() {
 }
 
 def ApplyVersion() {
-	env.VERSION_STRING = new JenkinsBase().RunCommand('''@"%JENKINS_HOME%/scripts/apply-version.py"''' + " --update --p4 --changelist=${P4_CHANGELIST} --stream=${P4STREAMNAME} -d ${ProjectRoot}".trim())
+	env.VERSION_STRING = new JenkinsBase().RunCommand('''@"%JENKINS_HOME%/scripts/apply-version.py" ''' + " --update --p4 --changelist=${P4_CHANGELIST} --stream=${P4STREAMNAME} -d ${ProjectRoot}".trim())
     currentBuild.displayName = "#${BUILD_NUMBER}: v${env.VERSION_STRING}"
 }
 
