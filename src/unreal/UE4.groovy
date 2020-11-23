@@ -29,7 +29,7 @@ def UE4_CMD = ''
 def DefaultArguments = ''
 def UAT_CommonArguments = ''
 def OutputPath = ''
-def JB = new unreal.JenkinsBase()
+def JB = new JenkinsBase()
 
 def Initialise(String projectName, String projectRoot, String engineDir = "", String defaultArguments = "")
 {
