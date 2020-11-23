@@ -40,19 +40,19 @@ def Initialise(String projectName, String projectRoot, String engineDir = "", St
 
     if(engineDir == "")
 	{
-		EngineDir	= "${ProjectDir}/Engine"
+		EngineDir	= "${ProjectRoot}/Engine"
 	}
 
 	DefaultArguments = defaultArguments
 	
-	BatchDir = isUnix() ? "${EngineDir}/Engine/Build/BatchFiles/Linux" : "${EngineDir}/Engine/Build/BatchFiles"
+	BatchDir = isUnix() ? "${EngineDir}/Build/BatchFiles/Linux" : "${EngineDir}/Build/BatchFiles"
 	ScriptInvocationType = isUnix() ?  "sh" : "bat"
 	
 	UBT	= "\"${BatchDir}/Build.${ScriptInvocationType}\""
 
-	UAT = "\"${EngineDir}/Engine/Build/BatchFiles/RunUAT.${ScriptInvocationType}\""
+	UAT = "\"${EngineDir}/Build/BatchFiles/RunUAT.${ScriptInvocationType}\""
 
-	UE4_CMD = "\"${EngineDir}/Engine/Binaries/Win64/UE4Editor-Cmd.exe\""
+	UE4_CMD = "\"${EngineDir}/Binaries/Win64/UE4Editor-Cmd.exe\""
     OutputPath = "${ProjectRoot}/Temp"
 }
 
