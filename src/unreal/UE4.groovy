@@ -80,17 +80,16 @@ def ApplyVersion() {
 def CompileProject(String buildConfig, String platform = "Win64", boolean editor = true, String additionalArguments = "")
 {
 	String projectTarget = "${ProjectName}"
-    stage ("Build - ${buildConfig}-${platform}") {
-
-        if(editor && (buildConfig == 'Development' || buildConfig == 'DebugGame'))
-        {
-            stage("Build Editor - ${buildConfig}-${platform}") {
-                //Editor
-                new JenkinsBase().RunCommand("${UBT} ${projectTarget}Editor ${ProjectFile} ${platform} ${buildConfig} ${additionalArguments} ${DefaultArguments} -build -skipcook")
-            }
+    if(editor && (buildConfig == 'Development' || buildConfig == 'DebugGame'))
+    {
+        stage("Build Editor - ${buildConfig}-${platform}") {
+            //Editor
+            new JenkinsBase().RunCommand("${UBT} ${projectTarget}Editor ${ProjectFile} ${platform} ${buildConfig} -build -skipcook ${additionalArguments} ${DefaultArguments}")
         }
+    }
         //Normal build
-        new JenkinsBase().RunCommand("${UBT} ${projectTarget} ${ProjectFile} ${platform} ${buildConfig} ${additionalArguments} ${DefaultArguments} -build -skipcook")
+    stage ("Build - ${buildConfig}-${platform}") {
+        new JenkinsBase().RunCommand("${UBT} ${projectTarget} ${ProjectFile} ${platform} ${buildConfig} -build -skipcook ${additionalArguments} ${DefaultArguments}")
     }
 }
 
