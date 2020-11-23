@@ -73,7 +73,7 @@ def GenerateProjectfiles() {
 }
 
 def ApplyVersion() {
-	env.VERSION_STRING = new JenkinsBase().RunCommand('''@"%JENKINS_HOME%/scripts/apply-version.py" ''' + " --update --p4 --changelist=${P4_CHANGELIST} --stream=${P4STREAMNAME} -d ${ProjectRoot}".trim())
+	env.VERSION_STRING = new JenkinsBase().RunCommand('''@"%JENKINS_HOME%/scripts/apply-version.py" ''' + " --update --p4 --changelist=${P4_CHANGELIST} --stream=${P4STREAMNAME} -d ${ProjectRoot}".trim(), false)
     currentBuild.displayName = "#${BUILD_NUMBER}: v${env.VERSION_STRING}"
 }
 
@@ -93,7 +93,7 @@ def CompileProject(String buildConfig, String platform = "Win64", boolean editor
     }
 }
 
-def CookProject( String platform, String buildConfig, boolean archive) {
+def CookProject( String platform, String buildConfig) {
     stage ( "Cook - ${buildConfig}-${platform}") {
         // Some platforms may need specific commands to be executed before the cooker starts
         executePlatformPreCookCommands( platform )

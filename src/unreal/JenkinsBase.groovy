@@ -1,6 +1,6 @@
 package unreal;
 
-def RunCommand(def Command, boolean printStdOut = false)
+def RunCommand(def Command, boolean printStdOut = true)
 {
 	if(isUnix())
 	{
