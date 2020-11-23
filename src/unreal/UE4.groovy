@@ -29,7 +29,6 @@ def UE4_CMD = ''
 def DefaultArguments = ''
 def UAT_CommonArguments = ''
 def OutputPath = ''
-JenkinsBase JB = new unreal.JenkinsBase()
 
 def Initialise(String projectName, String projectRoot, String engineDir = "", String defaultArguments = "")
 {
@@ -74,7 +73,7 @@ def GenerateProjectfiles() {
 }
 
 def ApplyVersion() {
-	env.VERSION_STRING = JB.RunCommand('''@"%JENKINS_HOME%/scripts/apply-version.py"''' + " --update --p4 --changelist=${P4_CHANGELIST} --stream=${P4STREAMNAME} -d ${ProjectRoot}".trim())
+	env.VERSION_STRING = new JenkinsBase().RunCommand('''@"%JENKINS_HOME%/scripts/apply-version.py"''' + " --update --p4 --changelist=${P4_CHANGELIST} --stream=${P4STREAMNAME} -d ${ProjectRoot}".trim())
     currentBuild.displayName = "#${BUILD_NUMBER}: v${env.VERSION_STRING}"
 }
 
@@ -83,12 +82,12 @@ def CompileProject(String buildConfig, String platform = "Win64", boolean editor
 	String projectTarget = "${ProjectName}"
     stage ("Build - ${buildConfig}-${platform}") {
 
-        JB.RunCommand("${UBT} ${projectTarget} ${ProjectFile} ${platform} ${buildConfig} ${additionalArguments} ${DefaultArguments} -build -skipcook")
+        new JenkinsBase().RunCommand("${UBT} ${projectTarget} ${ProjectFile} ${platform} ${buildConfig} ${additionalArguments} ${DefaultArguments} -build -skipcook")
         if(editor && (buildConfig == 'Development' || buildConfig == 'DebugGame'))
         {
             stage("Build Editor - ${buildConfig}-${platform}") {
                 projectTarget += "Editor"
-                JB.RunCommand("${UBT} ${projectTarget} ${ProjectFile} ${platform} ${buildConfig} ${additionalArguments} ${DefaultArguments} -build -skipcook")
+                new JenkinsBase().RunCommand("${UBT} ${projectTarget} ${ProjectFile} ${platform} ${buildConfig} ${additionalArguments} ${DefaultArguments} -build -skipcook")
             }
         }
     }
@@ -99,7 +98,7 @@ def CookProject( String platform, String buildConfig, boolean archive) {
         // Some platforms may need specific commands to be executed before the cooker starts
         executePlatformPreCookCommands( platform )
         //BuildCookRun baseline + UAT Cook arguments
-        JB.RunCommand(GetUATCommonArguments()+" "+GetUATCookArguments(platform, buildConfig))
+        new JenkinsBase().RunCommand(GetUATCommonArguments()+" "+GetUATCookArguments(platform, buildConfig))
         executePlatformPostCookCommands( platform )
     }
 }
@@ -107,7 +106,7 @@ def CookProject( String platform, String buildConfig, boolean archive) {
 def PackageProject(String platform, String buildConfig, String stagingDir, boolean usePak = true, boolean iterative = true, String cmdlineArguments = "", String additionalArguments = "")
 {
     stage( "Package - ${buildConfig}-${platform}") {
-	    JB.RunCommand("${UAT} BuildCookRun -project=${ProjectFile} -platform=${platform} -skipcook -skipbuild -nocompileeditor -NoSubmit -stage -package -clientconfig=${buildConfig} -pak -archive -archivedirectory="+GetOutputDirectory(platform, buildConfig)+" -cmdline=\"${cmdlineArguments}\" " + "${additionalArguments} ${DefaultArguments}")
+	    new JenkinsBase().RunCommand("${UAT} BuildCookRun -project=${ProjectFile} -platform=${platform} -skipcook -skipbuild -nocompileeditor -NoSubmit -stage -package -clientconfig=${buildConfig} -pak -archive -archivedirectory="+GetOutputDirectory(platform, buildConfig)+" -cmdline=\"${cmdlineArguments}\" " + "${additionalArguments} ${DefaultArguments}")
     }
 }
 
@@ -121,11 +120,11 @@ def GetUATCommonArguments( String platform, String buildConfig, boolean clean ) 
 }
 
 def ArchiveBuild(String platform, String buildConfig) {
-		JB.RunCommand('''"%SevenZipPath%/7z.exe"'''+" a -t7z "+GetOutputDirectory(platform, buildConfig)+"/"+GetArchiveName(platform, buildConfig, env.VERSION_STRING, P4STREAMNAME)+ " " +GetOutputDirectory(platform, buildConfig)+"/.")
+		new JenkinsBase().RunCommand('''"%SevenZipPath%/7z.exe"'''+" a -t7z "+GetOutputDirectory(platform, buildConfig)+"/"+GetArchiveName(platform, buildConfig, env.VERSION_STRING, P4STREAMNAME)+ " " +GetOutputDirectory(platform, buildConfig)+"/.")
 }
 
 def PublishArtifacts() {
-    JB.RunCommand('''"%SevenZipPath%/7z.exe"'''+" a -t7z ${ProjectRoot}/Temp/Logs.7z"+" " + GetEngineFolder()+"/Programs/AutomationTool/Saved/.")
+    new JenkinsBase().RunCommand('''"%SevenZipPath%/7z.exe"'''+" a -t7z ${ProjectRoot}/Temp/Logs.7z"+" " + GetEngineFolder()+"/Programs/AutomationTool/Saved/.")
     archiveArtifacts allowEmptyArchive: true, artifacts: 'Temp/**/*.7z', caseSensitive: false, fingerprint: true
 }
 
