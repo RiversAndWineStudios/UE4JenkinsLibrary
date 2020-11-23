@@ -29,7 +29,7 @@ def UE4_CMD = ''
 def DefaultArguments = ''
 def UAT_CommonArguments = ''
 def OutputPath = ''
-def JB = new JenkinsBase()
+JenkinsBase JB = new unreal.JenkinsBase()
 
 def Initialise(String projectName, String projectRoot, String engineDir = "", String defaultArguments = "")
 {
@@ -65,7 +65,7 @@ def RemoveOldBuilds() {
 }
 
 def GenerateProjectfiles() {
-    JB.RunCommand("\"${BatchDir}/GenerateProjectFiles.${ScriptInvocationType}\" -projectfiles -project=${ProjectFile} -game -engine -progress ${DefaultArguments}")
+    new JenkinsBase().RunCommand("\"${BatchDir}/GenerateProjectFiles.${ScriptInvocationType}\" -projectfiles -project=${ProjectFile} -game -engine -progress ${DefaultArguments}")
 }
 
 def ApplyVersion() {
