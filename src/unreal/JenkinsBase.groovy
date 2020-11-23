@@ -1,14 +1,14 @@
 package unreal;
 
-def RunCommand(def Command)
+def RunCommand(def Command, boolean printStdOut = false)
 {
 	if(isUnix())
 	{
-		sh(script: Command, returnStdout: true)
+		sh(script: Command, returnStdout: !printStdOut)
 	}
 	else
 	{
-		bat(script: Command, returnStdout: true)
+		bat(script: Command, returnStdout: !printStdOut)
 	}
 }
 
