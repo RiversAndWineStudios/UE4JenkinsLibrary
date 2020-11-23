@@ -26,6 +26,9 @@ def UE4_CMD = ''
 
 /* Arguments to pass to all commands. e.g -BuildMachine */
 def DefaultArguments = ''
+def UAT_CommonArguments = ''
+def OutputPath = ''
+def JB = new unreal.JenkinsBase()
 
 def Initialise(String projectName, String projectRoot, String engineDir = "", String defaultArguments = "")
 {
@@ -50,134 +53,97 @@ def Initialise(String projectName, String projectRoot, String engineDir = "", St
 	UAT = "\"${EngineDir}/Engine/Build/BatchFiles/RunUAT.${ScriptInvocationType}\""
 
 	UE4_CMD = "\"${EngineDir}/Engine/Binaries/Win64/UE4Editor-Cmd.exe\""
+    OutputPath = "${ProjectRoot}/Temp"
 }
+
+
 
 def RemoveOldBuilds() {
     catchError(buildResult: 'SUCCESS', stageResult: 'FAILURE') {
-        bat "rd /S /Q " + workspace + "\\Temp"
+        bat "rd /S /Q ${OutputPath}"
     }
 }
 
 def GenerateProjectfiles() {
-    RunCommand("\"${BatchDir}/GenerateProjectFiles.${ScriptInvocationType}\" -projectfiles -project=${ProjectFile} -game -engine -progress ${DefaultArguments}")
-}
-
-def buildEditor( String platform ) {
-    stage ( 'Build Editor Win64 for ' + platform ) {
-        bat GetEngineFolder() + "/Binaries/DotNET/UnrealBuildTool.exe ${env.PROJECT_NAME}Editor Win64 Development " + GetUDFolder() + "/${env.PROJECT_NAME}.uproject"
-    }
+    JB.RunCommand("\"${BatchDir}/GenerateProjectFiles.${ScriptInvocationType}\" -projectfiles -project=${ProjectFile} -game -engine -progress ${DefaultArguments}")
 }
 
 def ApplyVersion() {
-	env.VERSION_STRING = bat(returnStdout: true, script: '''@"%JENKINS_HOME%/scripts/apply-version.py"''' + " --update --p4 --changelist=${P4_CHANGELIST} --stream=${P4STREAMNAME} -d "+workspace).trim()
+	env.VERSION_STRING = bat(returnStdout: true, script: '''@"%JENKINS_HOME%/scripts/apply-version.py"''' + " --update --p4 --changelist=${P4_CHANGELIST} --stream=${P4STREAMNAME} -d "+${ProjectRoot}).trim()
     currentBuild.displayName = "#${BUILD_NUMBER}: v${env.VERSION_STRING}"
 }
 
-def resetVersion() {
-	bat '''"%JENKINS_HOME%/scripts/apply-version.py"''' + " --reset -d "+workspace
-}
+def CompileProject(String buildConfig, String platform = "Win64", boolean editor = true, String additionalArguments = "")
+{
+	String projectTarget = "${ProjectName}"
+    stage ("Build - ${buildConfig}-${platform}") {
 
-def buildCookRun( String platform, String buildConfig ) {
-    // Dont archive for bugfix / hotfix / etc...
-    Boolean can_archive_project = ( buildConfig == 'Development'
-        || buildConfig == 'Shipping' )
-
-    Boolean Storeflag = "${StoreBuild}" == "true" ? true : false;
-    // Cook if we want to archive (obviously) and always cook on Win64 to check PRs won't break
-    Boolean can_cook_project = can_archive_project || ( platform == 'Win64' )
-    can_archive_project = can_archive_project && Storeflag
-
-    stage ( 'Build ' + platform ) {
-        bat GetUATCommonArguments( platform, buildConfig ) + GetUATBuildArguments()
-    }
-
-    if ( can_cook_project ) {
-        stage ( 'Cook ' + platform ) {
-            // Some platforms may need specific commands to be executed before the cooker starts
-            executePlatformPreCookCommands( platform )
-            bat GetUATCommonArguments( platform, buildConfig ) + GetUATCookArguments( platform, buildConfig, can_archive_project )
-            executePlatformPostCookCommands( platform )
+        JB.RunCommand("${UBT} ${projectTarget} ${ProjectFile} ${platform} ${buildConfig} ${additionalArguments} ${DefaultArguments} -build -skipcook")
+        if(editor && (buildConfig == 'Development' || buildConfig == 'DebugGame'))
+        {
+            stage("Build Editor - ${buildConfig}-${platform}") {
+                projectTarget += "Editor"
+                JB.RunCommand("${UBT} ${projectTarget} ${ProjectFile} ${platform} ${buildConfig} ${additionalArguments} ${DefaultArguments} -build -skipcook")
+            }
         }
     }
 }
 
-def archiveBuild(String platform, String buildConfig) {
-	echo "BuildConfig: ${buildConfig}    Platform: ${platform}"
-	Boolean ShouldArchiveShipping = (buildConfig == 'All' || buildConfig == 'Shipping')
-	echo "ShouldArchiveShipping: ${ShouldArchiveShipping}"
-	if(ShouldArchiveShipping) {
-		bat '''"%SevenZipPath%/7z.exe"'''+" a -t7z "+GetOutputDirectory(platform, 'Shipping')+"/"+GetArchiveName(platform, 'Shipping')+ " " +GetOutputDirectory(platform, 'Shipping')+"/."
-	}
-	Boolean ShouldArchiveDevelopment = buildConfig == 'All' || buildConfig == 'Development'
-	echo "ShouldArchiveDevelopment: ${ShouldArchiveDevelopment}"
-	if(ShouldArchiveDevelopment) {
-		bat '''"%SevenZipPath%/7z.exe"'''+" a -t7z "+GetOutputDirectory(platform, 'Development')+"/"+GetArchiveName(platform, 'Development')+ " " +GetOutputDirectory(platform, 'Development')+"/."
-	}
+def CookProject( String platform, String buildConfig, boolean archive) {
+    stage ( "Cook - ${buildConfig}-${platform}") {
+        // Some platforms may need specific commands to be executed before the cooker starts
+        executePlatformPreCookCommands( platform )
+        //BuildCookRun baseline + UAT Cook arguments
+        JB.RunCommand(GetUATCommonArguments()+" "+GetUATCookArguments(platform, buildConfig))
+        executePlatformPostCookCommands( platform )
+    }
 }
 
-def ArtifactLogs() {
-    bat '''"%SevenZipPath%/7z.exe"'''+" a -t7z "+workspace+"/Temp/Logs.7z"+" " + GetEngineFolder()+"/Programs/AutomationTool/Saved/."
+def PackageProject(String platform, String buildConfig, String stagingDir, boolean usePak = true, boolean iterative = true, String cmdlineArguments = "", String additionalArguments = "")
+{
+    stage( "Package - ${buildConfig}-${platform}") {
+	    JB.RunCommand("${UAT} BuildCookRun -project=${ProjectFile} -platform=${platform} -skipcook -skipbuild -nocompileeditor -NoSubmit -stage -package -clientconfig=${buildConfig} -pak -archive -archivedirectory="+GetOutputDirectory(platform, buildConfig)+" -cmdline=\"${cmdlineArguments}\" " + "${additionalArguments} ${DefaultArguments}")
+    }
+}
+
+def GetUATCommonArguments( String platform, String buildConfig, boolean clean ) {
+    String result = "${UAT} BuildCookRun -project=${ProjectFile} -platform=${platform} -clientconfig=${clientconfig} -utf8output -noP4"
+    result += GetUATCompileFlags(platform)
+    if ( buildConfig == 'Shipping' || clean) {
+        result += ' -clean'
+    }
+    return result
+}
+
+def ArchiveBuild(String platform, String buildConfig) {
+		JB.RunCommand('''"%SevenZipPath%/7z.exe"'''+" a -t7z "+GetOutputDirectory(platform, buildConfig)+"/"+GetArchiveName(platform, buildConfig, env.VERSION_STRING, P4STREAMNAME)+ " " +GetOutputDirectory(platform, buildConfig)+"/.")
+}
+
+def PublishArtifacts() {
+    JB.RunCommand('''"%SevenZipPath%/7z.exe"'''+" a -t7z ${ProjectRoot}/Temp/Logs.7z"+" " + GetEngineFolder()+"/Programs/AutomationTool/Saved/.")
     archiveArtifacts allowEmptyArchive: true, artifacts: 'Temp/**/*.7z', caseSensitive: false, fingerprint: true
 }
 
-def GetArchiveName(String platform, String buildConfig) {
-    return "${P4STREAMNAME}/${env.VERSION_STRING}-${Platform}-${buildConfig}.7z"
+def GetArchiveName(String platform, String buildConfig, String versionString, String folder = '') {
+    return "${folder}/${versionString}-${platform}-${buildConfig}.7z"
 }
 
 //Full outputh path
 def GetOutputDirectory( String platform, String buildConfig ) {
-    return workspace +'/'+ GetOutputDirFromProjectRoot(platform, buildConfig)
-}
-
-//relative to Project folder path, so we can use it for artifacts
-def GetOutputDirFromProjectRoot( String platform, String buildConfig ) {
-    return 'Temp/' + buildConfig + "/"+platform
-}
-
-def GetEngineFolder() {
-    return workspace + '/Engine'
-}
-
-def GetUDFolder() {
-    return workspace + '/UD'
-}
-
-def GetUATCommonArguments( String platform, String buildConfig ) {
-    String result = GetEngineFolder() + '/Build/BatchFiles/RunUAT.bat BuildCookRun -project=' + GetUDFolder() + "/${env.PROJECT_NAME}.uproject -utf8output -noP4 -platform=" + platform + ' -clientconfig=' + buildConfig
-	Boolean CleanFlag = "${CLEANBUILD}" == "true" ? true : false;
-    result += GetUATCompileFlags(platform)
-
-    if ( buildConfig == 'Shipping' || CleanFlag) {
-        result += ' -clean'
-    }
-
-    return result
+    return "${OutputPath}/${buildConfig}/${platform}"
 }
 
 def GetUATCompileFlags(String platform) {
     // -nocompile because we already have the automation tools
     // -nocompileeditor because we built it before
-    String result = ' -nocompile -nocompileeditor -prereqs -nodebuginfo -ue4exe='
-    result += GetEngineFolder()
-    result += "/Binaries/"+platform+"/UE4Editor-Cmd.exe"
-    return result
+    return " -nocompile -nocompileeditor -prereqs -nodebuginfo -ue4exe=${UE4_CMD}"
 }
 
-def GetUATBuildArguments() {
-    // build only. dont cook. This is done in a separate stage
-    return ' -build -skipcook'
-}
-
-def GetUATCookArguments( String platform, String buildConfig, Boolean archive_project ) {
-    String result = ' -allmaps -cook'
-
+//Cooking arguments
+def GetUATCookArguments( String platform, String buildConfig) {
+    String result = ' -allmaps -cook -skipbuild'
     result += GetUATCookArgumentsFromClientConfig( buildConfig)
     result += GetUATCookArgumentsForPlatform( platform )
-
-    if ( archive_project ) {
-        result += ' -pak -package -stage -archive -archivedirectory=' + GetOutputDirectory( platform, buildConfig )
-    }
-
     return result
 }
 
