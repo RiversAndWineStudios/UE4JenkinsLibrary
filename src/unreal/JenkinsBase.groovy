@@ -34,7 +34,7 @@ def GetJobType() {
 
 
 
-def Cleanup() {
+def TryCleanup(Boolean doIt) {
 	if(env.CleanWorkspace) {
 		cleanup true
 		cleanWs()

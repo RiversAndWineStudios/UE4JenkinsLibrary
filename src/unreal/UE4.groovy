@@ -4,6 +4,54 @@ import unreal.JenkinsBase;
 // All the helper functions used above //
 // ------------------------------------//
 
+/* Project Specific Directories */
+def EngineDir	= ''
+def ProjectName = ''
+def ProjectDir	= ''
+def ProjectFile	= ''
+def ProjectRoot = ''
+
+/* Return BatchFiles Dir */
+def BatchDir = ''
+def ScriptInvocationType = ''
+
+/* Return UBT */
+def UBT	= ''
+
+/* Return UAT */
+def UAT = ''
+
+/* Return the editor CMD */
+def UE4_CMD = ''
+
+/* Arguments to pass to all commands. e.g -BuildMachine */
+def DefaultArguments = ''
+
+def Initialise(String projectName, String projectRoot, String engineDir = "", String defaultArguments = "")
+{
+	ProjectName		= projectName
+	ProjectRoot		= projectRoot
+
+	if(engineDir == "")
+	{
+		EngineDir	= "${ProjectDir}/Engine"
+	}
+
+	ProjectDir      = "${ProjectRoot}"/"UD"
+	ProjectFile     = "\"${ProjectDir}/${ProjectName}.uproject\""
+
+	DefaultArguments = defaultArguments
+	
+	BatchDir = isUnix() ? "${EngineDir}/Engine/Build/BatchFiles/Linux" : "${EngineDir}/Engine/Build/BatchFiles"
+	ScriptInvocationType = isUnix() ?  "sh" : "bat"
+	
+	UBT	= "\"${BatchDir}/Build.${ScriptInvocationType}\""
+
+	UAT = "\"${EngineDir}/Engine/Build/BatchFiles/RunUAT.${ScriptInvocationType}\""
+
+	UE4_CMD = "\"${EngineDir}/Engine/Binaries/Win64/UE4Editor-Cmd.exe\""
+}
+
 def RemoveOldBuilds() {
     catchError(buildResult: 'SUCCESS', stageResult: 'FAILURE') {
         bat "rd /S /Q " + workspace + "\\Temp"
@@ -11,7 +59,7 @@ def RemoveOldBuilds() {
 }
 
 def GenerateProjectfiles() {
-    bat GetEngineFolder() + '/Binaries/DotNET/UnrealBuildTool.exe -projectfiles -project=' + GetUDFolder() + '/UpsideDrown.uproject -game -progress'
+    RunCommand("\"${BatchDir}/GenerateProjectFiles.${ScriptInvocationType}\" -projectfiles -project=${ProjectFile} -game -engine -progress ${DefaultArguments}")
 }
 
 def buildEditor( String platform ) {
