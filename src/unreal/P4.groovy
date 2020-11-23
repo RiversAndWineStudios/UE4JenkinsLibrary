@@ -21,7 +21,9 @@ def P4Submit(creds, ws, Paths, Message) {
                 value = item.get(key)
                 println "[" + key + ":"+ value+"]"
             }
+        }
     }
+
     //info = p4.run('submit','-d', Message)
     /*for( def item:  info) {
             for ( String key: item.keySet()) {
