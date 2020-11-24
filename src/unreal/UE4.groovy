@@ -117,7 +117,8 @@ def ArchiveBuild(String platform, String buildConfig) {
 }
 
 def PublishArtifacts() {
-    new JenkinsBase().RunCommand('''"%SevenZipPath%/7z.exe"'''+" a -t7z ${ProjectRoot}/Temp/Logs.7z"+" ${EngineDir}/Programs/AutomationTool/Saved/.")
+    new JenkinsBase().RunCommand('''"%SevenZipPath%/7z.exe"'''+" a -t7z ${ProjectRoot}/Temp/UAT_Logs.7z"+" ${EngineDir}/Programs/AutomationTool/Saved/.")
+    new JenkinsBase().RunCommand('''"%SevenZipPath%/7z.exe"'''+" a -t7z ${ProjectRoot}/Temp/UBT_Logs.7z"+" ${EngineDir}/Programs/UnrealBuildTool/.")
     archiveArtifacts allowEmptyArchive: true, artifacts: 'Temp/**/*.7z', caseSensitive: false, fingerprint: true
 }
 
