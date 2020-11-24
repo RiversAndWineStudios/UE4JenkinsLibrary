@@ -33,6 +33,7 @@ def P4Submit(creds, ws, Paths, Message) {
         }*/
 }
 
+//Uses shell to set the P4Ignore. Not sure if it helps in groovy context though.
 def SetP4Ignore(creds, ws, fileToSet){
     def JB = new unreal.JenkinsBase()
     JB.RunCommand("p4 set P4IGNORE=${fileToSet}")

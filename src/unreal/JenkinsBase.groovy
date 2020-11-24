@@ -1,5 +1,6 @@
 package unreal;
 
+//Runs a command agnostic of current platform.
 def RunCommand(def Command, boolean printStdOut = true)
 {
 	if(isUnix())
@@ -12,6 +13,7 @@ def RunCommand(def Command, boolean printStdOut = true)
 	}
 }
 
+//We define Polling triggers on the basis of recurring job or manual job currently
 def GetPollingTriggers() {
 	if(IsRecurring()) {
 		return 'H H/2 * * *'
@@ -23,6 +25,7 @@ def GetJobType() {
 	return IsRecurring() ? 'Recurring' : 'Manual'
 }
 
+//Checks if we defined Recurring job, and takes that. False by default
 def IsRecurring() {
 	if("${env.RecurringJob}" != 'null') {
 		return env.RecurringJob
@@ -30,8 +33,7 @@ def IsRecurring() {
 	return false
 }
 
-
-
+//The bool we pass in should be env.VAR, so that also an undefined value would get checked for null
 def TryCleanup(Boolean doIt) {
 	if(doIt) {
 		cleanup true

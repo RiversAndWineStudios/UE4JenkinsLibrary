@@ -72,15 +72,19 @@ def GenerateProjectfiles() {
     new JenkinsBase().RunCommand("\"${BatchDir}/GenerateProjectFiles.${ScriptInvocationType}\" -projectfiles -project=${ProjectFile} -game -engine ${DefaultArguments}")
 }
 
+//@Required
+//runs a python script to apply the current version into the game
 def ApplyVersion() {
 	env.VERSION_STRING = new JenkinsBase().RunCommand('''@"%JENKINS_HOME%/scripts/apply-version.py" ''' + " --update --p4 --changelist=${P4_CHANGELIST} --stream=${P4STREAMNAME} -d ${ProjectRoot}".trim(), false)
     currentBuild.displayName = "#${BUILD_NUMBER}: v${env.VERSION_STRING}"
 }
 
+//Builds the editor
 def BuildEditor(String buildConfig, String platform = "Win64", String additionalArguments = "") {
     new JenkinsBase().RunCommand("${UBT} ${ProjectName}Editor ${ProjectFile} ${platform} ${buildConfig} -build -skipcook ${additionalArguments} ${DefaultArguments}")
 }
 
+//Compiles the whole project
 def CompileProject(String buildConfig, String platform = "Win64", boolean clean = true, String additionalArguments = "")
 {
     String cleanflag = clean || (buildConfig == 'Shipping') ? "-clean" : ""
