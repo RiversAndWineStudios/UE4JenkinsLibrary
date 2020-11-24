@@ -13,23 +13,21 @@ def RunCommand(def Command, boolean printStdOut = true)
 }
 
 def GetPollingTriggers() {
-	if(GetJobType() == 'Recurring') {
+	if(IsRecurring()) {
 		return 'H H/2 * * *'
 	}
 	return ''
 }
 
 def GetJobType() {
-	try {
-		if(RecurringJob) {
-			return 'Recurring'
-		}
+	return IsRecurring() ? 'Recurring' : 'Manual'
+}
+
+def IsRecurring() {
+	if("${env.RecurringJob}" != 'null') {
+		return env.RecurringJob
 	}
-	catch ( groovy.lang.MissingPropertyException e ) {
-		println("RecurringJob not defined. Will check if it has a build causer")
-	}
-	def isStartedByUser = currentBuild.getBuildCauses('hudson.model.Cause$UserIdCause') != null
-	return isStartedByUser ? 'Manual' : 'Recurring'
+	return false
 }
 
 
