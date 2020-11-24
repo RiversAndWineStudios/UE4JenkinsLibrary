@@ -41,7 +41,7 @@ def TryCleanup(Boolean doIt) {
 	}
 }
 
-def 7Zip(String archive, String dirToArchive) {
+def Zip(String archive, String dirToArchive) {
 	RunCommand('''"%SevenZipPath%/7z.exe"'''+ " a -t7z ${archive} ${dirToArchive}")
 }
 

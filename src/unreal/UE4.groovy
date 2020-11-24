@@ -117,12 +117,12 @@ def GetUATCommonArguments( String platform, String buildConfig) {
 }
 
 def ArchiveBuild(String platform, String buildConfig, String versionString) {
-        new JenkinsBase().7Zip(GetArchiveName(platform, buildConfig, versionString), GetOutputDirectory(platform,buildConfig)+"/.")
+        new JenkinsBase().Zip(GetArchiveName(platform, buildConfig, versionString), GetOutputDirectory(platform,buildConfig)+"/.")
 }
 
 def PublishArtifacts() {
-    new JenkinsBase().7Zip("${ProjectRoot}/Temp/UAT_Logs.7z", "${EngineDir}/Programs/AutomationTool/Saved/.")
-    new JenkinsBase().7Zip("${ProjectRoot}/Temp/UBT_Logs.7z", "${EngineDir}/Programs/UnrealBuildTool/.")
+    new JenkinsBase().Zip("${ProjectRoot}/Temp/UAT_Logs.7z", "${EngineDir}/Programs/AutomationTool/Saved/.")
+    new JenkinsBase().Zip("${ProjectRoot}/Temp/UBT_Logs.7z", "${EngineDir}/Programs/UnrealBuildTool/.")
     archiveArtifacts allowEmptyArchive: true, artifacts: 'Temp/**/*.7z', caseSensitive: false, fingerprint: true
 }
 
