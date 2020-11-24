@@ -61,13 +61,4 @@ def abortPreviousRunningBuilds() {
     }
 }
 
-def TryGet(var) {
-	if(!var) {
-		println "null!"
-	}
-	else {
-		println "not null!"
-	}
-}
-
 return this
