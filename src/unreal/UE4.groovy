@@ -117,7 +117,7 @@ def GetUATCommonArguments( String platform, String buildConfig) {
 }
 
 def ArchiveBuild(String platform, String buildConfig) {
-		new JenkinsBase().RunCommand('''"%SevenZipPath%/7z.exe"'''+" a -t7z "+GetOutputDirectory(platform, buildConfig)+"/"+GetArchiveName(platform, buildConfig, env.VERSION_STRING, P4STREAMNAME)+ " " +GetOutputDirectory(platform, buildConfig)+"/.")
+		new JenkinsBase().RunCommand('''"%SevenZipPath%/7z.exe"'''+" a -t7z "+GetOutputDirectory(platform, buildConfig)+"/"+GetArchiveName(platform, buildConfig)+ " " +GetOutputDirectory(platform, buildConfig)+"/.")
 }
 
 def PublishArtifacts() {
@@ -126,7 +126,7 @@ def PublishArtifacts() {
     archiveArtifacts allowEmptyArchive: true, artifacts: 'Temp/**/*.7z', caseSensitive: false, fingerprint: true
 }
 
-def GetArchiveName(String platform, String buildConfig, String versionString, String folder = '') {
+def GetArchiveName(String platform, String buildConfig, String versionString, String folder = '.') {
     return "${folder}/${versionString}-${platform}-${buildConfig}.7z"
 }
 
