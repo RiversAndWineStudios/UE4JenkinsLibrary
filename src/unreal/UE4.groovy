@@ -60,10 +60,10 @@ def Initialise(String projectName, String projectRoot, String engineDir = "", St
 def RemoveOldBuilds() {
     catchError(buildResult: 'SUCCESS', stageResult: 'FAILURE') {
         if(isUnix()) {
-            new JenkinsBase().RunCommand("rm -rf ${OutputhPath}")
+            new JenkinsBase().RunCommand("rm -rf ${OutputPath}")
         }
         else {
-            String path = OutputhPath
+            String path = OutputPath
             path.replaceAll('/','\\')
             new JenkinsBase().RunCommand("rd /S /Q ${path}")
         }
