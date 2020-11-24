@@ -108,7 +108,7 @@ def CookProject( String platform, String buildConfig) {
 def PackageProject(String platform, String buildConfig, String cmdlineArguments = "", String additionalArguments = "")
 {
     stage( "Package - ${buildConfig}-${platform}") {
-	    new JenkinsBase().RunCommand("${UAT} BuildCookRun -project=${ProjectFile} -platform=${platform} -skipcook -skipbuild -nocompile -nocompileeditor -NoSubmit -stage -package -clientconfig=${buildConfig} -pak -archive -archivedirectory="+GetOutputDirectory(platform, buildConfig)+" -cmdline=\"${cmdlineArguments}\" " + "${additionalArguments} ${DefaultArguments}")
+	    new JenkinsBase().RunCommand("${UAT} BuildCookRun -project=${ProjectFile} -platform=${platform} -compressed -skipcook -skipbuild -nocompile -nocompileeditor -NoSubmit -stage -package -clientconfig=${buildConfig} -pak -archive -archivedirectory="+GetOutputDirectory(platform, buildConfig)+" -cmdline=\"${cmdlineArguments}\" " + "${additionalArguments} ${DefaultArguments}")
     }
 }
 
