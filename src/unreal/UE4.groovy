@@ -77,21 +77,15 @@ def ApplyVersion() {
     currentBuild.displayName = "#${BUILD_NUMBER}: v${env.VERSION_STRING}"
 }
 
-def CompileProject(String buildConfig, String platform = "Win64", boolean editor = true, String additionalArguments = "")
+def BuildEditor(String buildConfig, String platform = "Win64", String additionalArguments = "") {
+    new JenkinsBase().RunCommand("${UBT} ${ProjectName}Editor ${ProjectFile} ${platform} ${buildConfig} -build -skipcook ${additionalArguments} ${DefaultArguments}")
+}
+
+def CompileProject(String buildConfig, String platform = "Win64", boolean clean = true, String additionalArguments = "")
 {
-	String projectTarget = "${ProjectName}"
-    if(editor && (buildConfig == 'Development' || buildConfig == 'DebugGame'))
-    {
-        stage("Build Editor - ${buildConfig}-${platform}") {
-            //Editor
-            new JenkinsBase().RunCommand("${UBT} ${projectTarget}Editor ${ProjectFile} ${platform} ${buildConfig} -build -skipcook ${additionalArguments} ${DefaultArguments}")
-        }
-    }
-    else {
-        //Normal build
-        stage ("Build - ${buildConfig}-${platform}") {
-            new JenkinsBase().RunCommand("${UBT} ${projectTarget} ${ProjectFile} ${platform} ${buildConfig} -build -skipcook ${additionalArguments} ${DefaultArguments}")
-        }
+    String cleanflag = clean || (buildConfig == 'Shipping') ? "-clean" : ""
+    stage ("Build - ${buildConfig}-${platform}") {
+        new JenkinsBase().RunCommand(GetUATCommonArguments(platform, buildConfig)+" -build -skipcook ${cleanflag} ${additionalArguments} ${DefaultArguments}")
     }
 }
 
@@ -108,16 +102,13 @@ def CookProject( String platform, String buildConfig) {
 def PackageProject(String platform, String buildConfig, String cmdlineArguments = "", String additionalArguments = "")
 {
     stage( "Package - ${buildConfig}-${platform}") {
-	    new JenkinsBase().RunCommand("${UAT} BuildCookRun -project=${ProjectFile} -platform=${platform} -skipcook -skipbuild -nocompileeditor -NoSubmit -stage -package -clientconfig=${buildConfig} -pak -archive -archivedirectory="+GetOutputDirectory(platform, buildConfig)+" -cmdline=\"${cmdlineArguments}\" " + "${additionalArguments} ${DefaultArguments}")
+	    new JenkinsBase().RunCommand("${UAT} BuildCookRun -project=${ProjectFile} -platform=${platform} -skipcook -skipbuild -nocompile -nocompileeditor -NoSubmit -stage -package -clientconfig=${buildConfig} -pak -archive -archivedirectory="+GetOutputDirectory(platform, buildConfig)+" -cmdline=\"${cmdlineArguments}\" " + "${additionalArguments} ${DefaultArguments}")
     }
 }
 
 def GetUATCommonArguments( String platform, String buildConfig) {
     String result = "${UAT} BuildCookRun -project=${ProjectFile} -platform=${platform} -clientconfig=${buildConfig} -utf8output -noP4"
     result += GetUATCompileFlags(platform)
-    if ( buildConfig == 'Shipping') {
-        result += ' -clean'
-    }
     return result
 }
 
