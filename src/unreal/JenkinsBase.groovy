@@ -16,6 +16,9 @@ def RunCommand(def Command, boolean printStdOut = true)
 //We define Polling triggers on the basis of recurring job or manual job currently
 def GetPollingTriggers() {
 	if(IsRecurring()) {
+		if(params.PollingSchedule) {
+			return params.PollingSchedule
+		}
 		return 'H H/2 * * *'
 	}
 	return ''
