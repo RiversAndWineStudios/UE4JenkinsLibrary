@@ -33,7 +33,7 @@ def IsRecurring() {
 
 
 def TryCleanup(Boolean doIt) {
-	if(env.CleanWorkspace) {
+	if(doIt) {
 		cleanup true
 		cleanWs()
 	}
