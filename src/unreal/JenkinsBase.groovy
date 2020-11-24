@@ -27,8 +27,8 @@ def GetJobType() {
 
 //Checks if we defined Recurring job, and takes that. False by default
 def IsRecurring() {
-	if("${env.RecurringJob}" != 'null') {
-		return env.RecurringJob
+	if(params.RecurringJob) {
+		return params.RecurringJob
 	}
 	return false
 }
