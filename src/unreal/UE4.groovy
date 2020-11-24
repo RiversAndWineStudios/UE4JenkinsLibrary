@@ -64,7 +64,7 @@ def RemoveOldBuilds() {
         }
         else {
             String path = OutputPath
-            path.replaceAll('/','\\\\')
+            path = path.replaceAll('/','\\\\')
             new JenkinsBase().RunCommand("rd /S /Q ${path}")
         }
     }
