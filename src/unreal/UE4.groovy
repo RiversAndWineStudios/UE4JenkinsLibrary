@@ -116,7 +116,7 @@ def GetUATCommonArguments( String platform, String buildConfig) {
     return result
 }
 
-def ArchiveBuild(String platform, String buildConfig, String versionString, String streamName) {
+def ArchiveBuild(String platform, String buildConfig, String versionString) {
 		new JenkinsBase().RunCommand('''"%SevenZipPath%/7z.exe"'''+" a -t7z "+GetArchiveName(platform, buildConfig, versionString)+ " " +GetOutputDirectory(platform, buildConfig)+"/.")
 }
 
