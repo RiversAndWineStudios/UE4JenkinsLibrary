@@ -87,9 +87,11 @@ def CompileProject(String buildConfig, String platform = "Win64", boolean editor
             new JenkinsBase().RunCommand("${UBT} ${projectTarget}Editor ${ProjectFile} ${platform} ${buildConfig} -build -skipcook ${additionalArguments} ${DefaultArguments}")
         }
     }
+    else {
         //Normal build
-    stage ("Build - ${buildConfig}-${platform}") {
-        new JenkinsBase().RunCommand("${UBT} ${projectTarget} ${ProjectFile} ${platform} ${buildConfig} -build -skipcook ${additionalArguments} ${DefaultArguments}")
+        stage ("Build - ${buildConfig}-${platform}") {
+            new JenkinsBase().RunCommand("${UBT} ${projectTarget} ${ProjectFile} ${platform} ${buildConfig} -build -skipcook ${additionalArguments} ${DefaultArguments}")
+        }
     }
 }
 
@@ -103,7 +105,7 @@ def CookProject( String platform, String buildConfig) {
     }
 }
 
-def PackageProject(String platform, String buildConfig, String stagingDir, boolean usePak = true, boolean iterative = true, String cmdlineArguments = "", String additionalArguments = "")
+def PackageProject(String platform, String buildConfig, String cmdlineArguments = "", String additionalArguments = "")
 {
     stage( "Package - ${buildConfig}-${platform}") {
 	    new JenkinsBase().RunCommand("${UAT} BuildCookRun -project=${ProjectFile} -platform=${platform} -skipcook -skipbuild -nocompileeditor -NoSubmit -stage -package -clientconfig=${buildConfig} -pak -archive -archivedirectory="+GetOutputDirectory(platform, buildConfig)+" -cmdline=\"${cmdlineArguments}\" " + "${additionalArguments} ${DefaultArguments}")
@@ -124,7 +126,7 @@ def ArchiveBuild(String platform, String buildConfig) {
 }
 
 def PublishArtifacts() {
-    new JenkinsBase().RunCommand('''"%SevenZipPath%/7z.exe"'''+" a -t7z ${ProjectRoot}/Temp/Logs.7z"+" " + GetEngineFolder()+"/Programs/AutomationTool/Saved/.")
+    new JenkinsBase().RunCommand('''"%SevenZipPath%/7z.exe"'''+" a -t7z ${ProjectRoot}/Temp/Logs.7z"+" ${EngineDir}/Programs/AutomationTool/Saved/.")
     archiveArtifacts allowEmptyArchive: true, artifacts: 'Temp/**/*.7z', caseSensitive: false, fingerprint: true
 }
 

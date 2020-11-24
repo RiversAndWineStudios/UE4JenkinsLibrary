@@ -15,7 +15,7 @@ def P4Submit(creds, ws, Paths, Message) {
     def p4 = p4(credential: creds, workspace : ws)
     def info
     for(String path : Paths) {
-        info = p4.run('reconcile', '-e', '-a', '-n', path+"/...")
+        info = p4.run('reconcile', '-e', '-a', '-n', path)
         for( def item:  info) {
             for ( String key: item.keySet()) {
                 value = item.get(key)
